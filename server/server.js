@@ -10,7 +10,8 @@ const port = process.env.PORT || 3001;
 const uri = process.env.MONGODB_URI;
 const client = new MongoClient(uri);
 
-const upload = multer({ dest: 'uploads/' });
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
 
 app.use(cors());
 app.use(express.json());
@@ -34,27 +35,19 @@ async function run() {
 
     app.post('/api/upload', upload.single('file'), async (req, res) => {
       const { collectionName } = req.body;
-      const filePath = req.file.path;
-
-      if (!collectionName || !filePath) {
+      
+      if (!req.file || !collectionName) {
         return res.status(400).send('Collection name and file are required.');
       }
 
-      fs.readFile(filePath, 'utf8', async (err, data) => {
-        if (err) {
-          return res.status(500).send('Error reading the uploaded file.');
-        }
-
-        try {
-          const wordsData = JSON.parse(data);
-          const newCollection = database.collection(collectionName);
-          await newCollection.insertMany(wordsData);
-          fs.unlinkSync(filePath); // Clean up the uploaded file
-          res.status(201).send({ message: `Collection '${collectionName}' created successfully.` });
-        } catch (parseErr) {
-          res.status(400).send('Invalid JSON file.');
-        }
-      });
+      try {
+        const wordsData = JSON.parse(req.file.buffer.toString('utf8'));
+        const newCollection = database.collection(collectionName);
+        await newCollection.insertMany(wordsData);
+        res.status(201).send({ message: `Collection '${collectionName}' created successfully.` });
+      } catch (parseErr) {
+        res.status(400).send('Invalid JSON file.');
+      }
     });
 
     app.listen(port, () => {
