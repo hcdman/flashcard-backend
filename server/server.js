@@ -5,9 +5,9 @@ import multer from 'multer';
 import fs from 'fs';
 
 const app = express();
-const port = 3001;
+const port = process.env.PORT || 3001;
 
-const uri = "mongodb+srv://tvhoaihcmus:hcdmanme@cluster0.doeyhlt.mongodb.net/";
+const uri = process.env.MONGODB_URI;
 const client = new MongoClient(uri);
 
 const upload = multer({ dest: 'uploads/' });
